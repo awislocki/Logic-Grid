@@ -7,7 +7,6 @@ import { CluesList } from './components/CluesList';
 import { GameControls } from './components/GameControls';
 import { Brain, Sparkles, AlertCircle, CheckCircle, Info, Lock } from 'lucide-react';
 
-// Shared helper for key generation to ensure consistency
 const getKey = (c1: number, i1: number, c2: number, i2: number) => {
   const part1 = `c${c1}i${i1}`;
   const part2 = `c${c2}i${i2}`;
@@ -27,7 +26,7 @@ const App: React.FC = () => {
   const [puzzle, setPuzzle] = useState<PuzzleData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [gridState, setGridState] = useState<GridState>({});
-  const [themeInput, setThemeInput] = useState<string>("Classic Mystery");
+  const [themeInput, setThemeInput] = useState<string>("Cyberpunk Mystery");
   
   // Game Logic State
   const [tokens, setTokens] = useState<number>(3);
@@ -44,7 +43,7 @@ const App: React.FC = () => {
     setWin(false);
     setGameOver(false);
     setTokens(3); 
-    setRevealedClues(4); // Start with 4 clues
+    setRevealedClues(4); 
     setGridState({}); 
     try {
       const data = await generatePuzzle(theme);
@@ -56,13 +55,11 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // Initial load
   useEffect(() => {
     initGame("Classic Mystery");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-clear feedback after 5 seconds
   useEffect(() => {
     if (feedback) {
       const timer = setTimeout(() => setFeedback(null), 5000);
@@ -70,7 +67,6 @@ const App: React.FC = () => {
     }
   }, [feedback]);
 
-  // Smart Auto-X Logic
   const recalculateGrid = (currentGrid: GridState): GridState => {
     const nextGrid = { ...currentGrid };
     Object.keys(nextGrid).forEach(k => {
@@ -100,9 +96,8 @@ const App: React.FC = () => {
   const revealSolution = (currentPuzzle: PuzzleData, userGrid: GridState) => {
     const perfectGrid: GridState = {};
     const cats = currentPuzzle.categories;
-    const pairs = [[0,1], [0,2], [1,2]]; // Category pairs
+    const pairs = [[0,1], [0,2], [1,2]]; 
 
-    // 1. Build the Perfect Solution Grid
     for (const [cIdxA, cIdxB] of pairs) {
       const itemsA = cats[cIdxA].items;
       for (let iA = 0; iA < itemsA.length; iA++) {
@@ -126,10 +121,8 @@ const App: React.FC = () => {
       }
     }
 
-    // 2. Compare User Grid vs Perfect Grid
     const comparisonGrid: GridState = { ...userGrid };
 
-    // Mark Correct (Match) and Incorrect (User TRUE, Perfect FALSE)
     for (const [key, val] of Object.entries(userGrid)) {
         if (val === CellState.TRUE) {
             if (perfectGrid[key] === CellState.TRUE) {
@@ -140,7 +133,6 @@ const App: React.FC = () => {
         }
     }
 
-    // Mark Missed (Perfect TRUE, User !TRUE)
     for (const [key, val] of Object.entries(perfectGrid)) {
         if (val === CellState.TRUE) {
             if (userGrid[key] !== CellState.TRUE) {
@@ -238,12 +230,10 @@ const App: React.FC = () => {
 
   const giveHint = () => {
     if (!puzzle || win || gameOver) return;
-    
     if (tokens <= 0) {
       setFeedback({ type: 'error', message: "No tokens left!" });
       return;
     }
-    
     if (revealedClues >= puzzle.clues.length) {
        setFeedback({ type: 'info', message: "All clues are already revealed!" });
        return;
@@ -256,8 +246,6 @@ const App: React.FC = () => {
     
     if (nextTokens === 0) {
        setGameOver(true);
-       // Pass the CURRENT grid state (before this render update) effectively
-       // Since giveHint doesn't modify gridState, we can pass gridState safely
        setTimeout(() => {
            setFeedback({ type: 'error', message: "Out of tokens! Solution revealed." });
            revealSolution(puzzle, gridState);
@@ -265,31 +253,57 @@ const App: React.FC = () => {
     }
   };
 
+  // Construct Dynamic Styles
+  const themeStyles = puzzle ? {
+    '--puz-bg': puzzle.theme.colors.background,
+    '--puz-surface': puzzle.theme.colors.surface,
+    '--puz-border': puzzle.theme.colors.border,
+    '--puz-text': puzzle.theme.colors.text,
+    '--puz-accent': puzzle.theme.colors.accent,
+    '--puz-primary': puzzle.theme.colors.primary,
+    '--puz-font': puzzle.theme.font === 'serif' ? 'serif' : puzzle.theme.font === 'mono' ? 'monospace' : 'sans-serif',
+  } as React.CSSProperties : {};
+
+  // Construct Dynamic Emoji Pattern Background
+  const emoji = puzzle?.theme.emoji || '✨';
+  const bgPattern = `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50%25' y='50%25' font-size='30' text-anchor='middle' dominant-baseline='middle' fill-opacity='0.1' style='font-family: serif;'%3E${emoji}%3C/text%3E%3C/svg%3E")`;
+
   return (
-    <div className="min-h-screen bg-[#fdf6e3] flex flex-col items-center py-8 px-4 sm:px-6 font-sans text-[#2b2d42]">
-      
+    <div 
+      className="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 transition-colors duration-700"
+      style={{
+        ...themeStyles,
+        backgroundColor: 'var(--puz-bg)',
+        fontFamily: 'var(--puz-font), sans-serif',
+        color: 'var(--puz-text)'
+      }}
+    >
+      {/* Dynamic Background Pattern */}
+      <div className="fixed inset-0 pointer-events-none opacity-40 z-0" style={{ backgroundImage: bgPattern }}></div>
+
       {/* Header */}
-      <div className="w-full max-w-7xl mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="w-full max-w-7xl mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
         <div className="flex items-center gap-4">
-          <div className="bg-[#2b2d42] p-3 rounded-lg shadow-lg">
-            <Brain className="w-8 h-8 text-[#edf2f4]" />
+          <div className="p-3 rounded-lg shadow-lg" style={{ backgroundColor: 'var(--puz-primary)' }}>
+            <Brain className="w-8 h-8 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-extrabold text-[#2b2d42] tracking-wide font-serif">LOGIC GRID <span className="text-[#d90429]">MYSTERY</span></h1>
-            <p className="text-[#8d99ae] font-medium tracking-widest text-xs uppercase">Generated Deductive Reasoning</p>
+            <h1 className="text-3xl font-extrabold tracking-wide" style={{ color: 'var(--puz-primary)' }}>LOGIC GRID <span style={{ color: 'var(--puz-accent)' }}>MYSTERY</span></h1>
+            <p className="font-medium tracking-widest text-xs uppercase opacity-70">Generated Deductive Reasoning</p>
           </div>
         </div>
         
         {puzzle && (
-           <div className="bg-[#fff] px-6 py-4 rounded-sm border border-[#d4c5b0] shadow-sm max-w-2xl flex-1 md:text-right relative">
-             <div className="absolute top-0 left-0 w-full h-1 bg-[#2b2d42] opacity-10"></div>
-             <h2 className="text-xl font-bold font-serif text-[#2b2d42]">{puzzle.title}</h2>
-             <p className="text-sm text-[#5e6472] mt-1 italic font-serif leading-relaxed">"{puzzle.story}"</p>
+           <div className="px-6 py-4 rounded-sm border shadow-sm max-w-2xl flex-1 md:text-right relative"
+                style={{ backgroundColor: 'var(--puz-surface)', borderColor: 'var(--puz-border)' }}>
+             <div className="absolute top-0 left-0 w-full h-1 opacity-20" style={{ backgroundColor: 'var(--puz-primary)' }}></div>
+             <h2 className="text-xl font-bold" style={{ color: 'var(--puz-text)' }}>{puzzle.title}</h2>
+             <p className="text-sm mt-1 italic leading-relaxed opacity-80">{puzzle.story}</p>
            </div>
         )}
       </div>
 
-      <div className="w-full max-w-7xl">
+      <div className="w-full max-w-7xl relative z-10">
         <GameControls 
           onNewGame={() => initGame(themeInput)} 
           onCheck={checkSolution}
@@ -306,11 +320,14 @@ const App: React.FC = () => {
         {/* Feedback Banner */}
         {feedback && (
           <div className={`
-            mb-6 border-l-4 px-6 py-4 rounded-r-md flex items-center gap-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300 font-serif
-            ${feedback.type === 'error' ? 'bg-[#fff0f3] border-[#d90429] text-[#800f2f]' : ''}
-            ${feedback.type === 'success' ? 'bg-[#f0fff4] border-[#38b000] text-[#004b23]' : ''}
-            ${feedback.type === 'info' ? 'bg-[#e0fbfc] border-[#00b4d8] text-[#0077b6]' : ''}
-          `}>
+            mb-6 border-l-4 px-6 py-4 rounded-r-md flex items-center gap-4 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300
+            ${feedback.type === 'error' ? 'bg-red-50 border-red-600 text-red-900' : ''}
+            ${feedback.type === 'success' ? 'bg-green-50 border-green-600 text-green-900' : ''}
+            ${feedback.type === 'info' ? 'bg-blue-50 border-blue-600 text-blue-900' : ''}
+          `} style={{
+            // Override with theme colors if possible, but keep accessible defaults for alerts
+            borderColor: feedback.type === 'success' ? 'var(--puz-accent)' : undefined
+          }}>
             {feedback.type === 'error' && <AlertCircle className="w-6 h-6 shrink-0" />}
             {feedback.type === 'success' && <CheckCircle className="w-6 h-6 shrink-0" />}
             {feedback.type === 'info' && <Info className="w-6 h-6 shrink-0" />}
@@ -320,20 +337,21 @@ const App: React.FC = () => {
 
         {/* Game Over Banner */}
         {gameOver && !win && (
-          <div className="mb-6 bg-[#2b2d42] text-white px-6 py-4 rounded-sm shadow-xl flex items-center gap-4 animate-in fade-in border-4 border-[#1a1b26]">
-             <Lock className="w-8 h-8 text-[#d90429]" />
+          <div className="mb-6 text-white px-6 py-4 rounded-sm shadow-xl flex items-center gap-4 animate-in fade-in border-4"
+               style={{ backgroundColor: 'var(--puz-primary)', borderColor: 'var(--puz-border)' }}>
+             <Lock className="w-8 h-8" style={{ color: 'var(--puz-accent)' }} />
              <div>
-               <p className="font-bold text-xl font-serif tracking-wide text-[#edf2f4]">CASE CLOSED</p>
-               <p className="text-[#8d99ae] text-sm">You ran out of resources. The solution comparison is shown below.</p>
+               <p className="font-bold text-xl tracking-wide">CASE CLOSED</p>
+               <p className="opacity-80 text-sm">You ran out of resources. The solution comparison is shown below.</p>
              </div>
           </div>
         )}
 
         {loading && (
           <div className="flex flex-col items-center justify-center py-32 animate-pulse">
-            <Sparkles className="w-16 h-16 text-[#2b2d42] mb-6 animate-spin-slow" />
-            <p className="text-2xl font-bold text-[#2b2d42] font-serif">Constructing Mystery...</p>
-            <p className="text-[#8d99ae] mt-2 font-serif italic">Interviewing witnesses, gathering evidence...</p>
+            <Sparkles className="w-16 h-16 mb-6 animate-spin-slow" style={{ color: 'var(--puz-primary)' }} />
+            <p className="text-2xl font-bold">Constructing Mystery...</p>
+            <p className="mt-2 italic opacity-60">Interviewing witnesses, gathering evidence...</p>
           </div>
         )}
 
@@ -351,10 +369,11 @@ const App: React.FC = () => {
                  />
                  {/* Legend for Game Over */}
                  {gameOver && !win && (
-                    <div className="mt-4 flex gap-4 text-xs font-bold font-serif uppercase tracking-widest text-[#2b2d42] bg-white/50 px-4 py-2 rounded-sm">
-                      <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gradient-to-br from-[#4a7c59] to-[#2d4a3e]"></div> Correct</div>
-                      <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gradient-to-br from-[#e63946] to-[#9d0208]"></div> Incorrect</div>
-                      <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-gradient-to-br from-[#457b9d] to-[#1d3557]"></div> Missed</div>
+                    <div className="mt-4 flex gap-4 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-sm"
+                         style={{ backgroundColor: 'var(--puz-surface)', color: 'var(--puz-text)' }}>
+                      <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ background: 'var(--puz-accent)' }}></div> Correct</div>
+                      <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-[#e63946]"></div> Incorrect</div>
+                      <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ background: 'var(--puz-primary)' }}></div> Missed</div>
                     </div>
                  )}
               </div>
