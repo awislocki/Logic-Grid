@@ -1,0 +1,5 @@
+{
+  "name": "Logic Grid GenAI",
+  "description": "An infinite logic puzzle generator powered by Gemini. Solve complex grid riddles with a beautiful, interactive interface.",
+  "requestFramePermissions": []
+}
